@@ -7,8 +7,11 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
+import com.android.billingclient.api.BillingResult
 import dagger.hilt.android.AndroidEntryPoint
 import de.greenrobot.event.EventBus
+import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody
 import org.edx.mobile.R
@@ -26,22 +29,31 @@ import org.edx.mobile.event.MoveToDiscoveryTabEvent
 import org.edx.mobile.event.NetworkConnectivityChangeEvent
 import org.edx.mobile.exception.AuthException
 import org.edx.mobile.exception.ErrorMessage
+import org.edx.mobile.extenstion.decodeToLong
 import org.edx.mobile.http.HttpStatus
 import org.edx.mobile.http.HttpStatusException
 import org.edx.mobile.http.notifications.FullScreenErrorNotification
 import org.edx.mobile.http.notifications.SnackbarErrorNotification
+import org.edx.mobile.inapppurchases.BillingProcessor
+import org.edx.mobile.inapppurchases.BillingProcessor.BillingFlowListeners
+import org.edx.mobile.inapppurchases.ProductManager
 import org.edx.mobile.interfaces.RefreshListener
 import org.edx.mobile.logger.Logger
 import org.edx.mobile.model.api.EnrolledCoursesResponse
+import org.edx.mobile.model.course.EnrollmentMode
 import org.edx.mobile.module.analytics.Analytics
 import org.edx.mobile.module.analytics.InAppPurchasesAnalytics
 import org.edx.mobile.module.db.DataCallback
+import org.edx.mobile.module.prefs.LoginPrefs
 import org.edx.mobile.util.ConfigUtil
 import org.edx.mobile.util.ConfigUtil.Companion.isCourseDiscoveryEnabled
+import org.edx.mobile.util.InAppPurchasesException
+import org.edx.mobile.util.InAppPurchasesUtils
 import org.edx.mobile.util.NetworkUtil
 import org.edx.mobile.util.NonNullObserver
 import org.edx.mobile.util.UiUtils
 import org.edx.mobile.view.adapters.MyCoursesAdapter
+import org.edx.mobile.view.dialog.AlertDialogFragment
 import org.edx.mobile.view.dialog.CourseModalDialogFragment
 import org.edx.mobile.view.dialog.FullscreenLoaderDialogFragment
 import org.edx.mobile.viewModel.InAppPurchasesViewModel
@@ -60,6 +72,7 @@ class MyCoursesListFragment : OfflineSupportBaseFragment(), RefreshListener {
     private var refreshOnResume = false
     private var refreshOnPurchase = false
     private var lastClickTime: Long = 0
+    private var unfulfilledPurchases: List<Pair<String, String>> = emptyList()
 
     @Inject
     lateinit var courseAPI: CourseAPI
@@ -73,8 +86,15 @@ class MyCoursesListFragment : OfflineSupportBaseFragment(), RefreshListener {
     @Inject
     lateinit var iapAnalytics: InAppPurchasesAnalytics
 
+    @Inject
+    lateinit var iapUtils: InAppPurchasesUtils
+
+    @Inject
+    lateinit var loginPrefs: LoginPrefs
+
     private lateinit var errorNotification: FullScreenErrorNotification
     private lateinit var enrolledCoursesCall: Call<List<EnrolledCoursesResponse>>
+    private lateinit var billingProcessor: BillingProcessor
     private var fullscreenLoader: FullscreenLoaderDialogFragment? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -162,6 +182,28 @@ class MyCoursesListFragment : OfflineSupportBaseFragment(), RefreshListener {
     }
 
     private fun initObservers() {
+        iapViewModel.executeResponse.observe(
+            viewLifecycleOwner,
+            NonNullObserver {
+                if (iapViewModel.upgradeMode.isSilentMode()) {
+                    AlertDialogFragment.newInstance(
+                        getString(R.string.silent_course_upgrade_success_title),
+                        getString(R.string.silent_course_upgrade_success_message),
+                        getString(R.string.label_refresh_now),
+                        { _, _ ->
+                            iapViewModel.showFullScreenLoader(true)
+                        },
+                        getString(R.string.label_continue_without_update),
+                        { _, _ ->
+                            resetPurchase()
+                            if (unfulfilledPurchases.isNotEmpty()) {
+                                purchaseCourse()
+                            }
+                        }
+                    ).show(childFragmentManager, null)
+                }
+            })
+
         iapViewModel.showFullscreenLoaderDialog.observe(
             viewLifecycleOwner,
             NonNullObserver { canShowLoader ->
@@ -192,8 +234,54 @@ class MyCoursesListFragment : OfflineSupportBaseFragment(), RefreshListener {
                     iapAnalytics.trackIAPEvent(Analytics.Events.IAP_UNLOCK_UPGRADED_CONTENT_REFRESH_TIME)
                     SnackbarErrorNotification(binding.root).showError(R.string.purchase_success_message)
                     iapViewModel.resetPurchase(false)
+
+                    if (unfulfilledPurchases.isNotEmpty()) {
+                        purchaseCourse()
+                    }
                 }
             })
+
+        iapViewModel.errorMessage.observe(
+            viewLifecycleOwner,
+            NonNullObserver { errorMsg ->
+                if (iapViewModel.upgradeMode.isNormalMode()) return@NonNullObserver
+
+                if (errorMsg.throwable is InAppPurchasesException) {
+                    when (errorMsg.throwable.httpErrorCode) {
+                        HttpStatus.UNAUTHORIZED -> {
+                            environment.router?.forceLogout(
+                                requireContext(),
+                                environment.analyticsRegistry,
+                                environment.notificationDelegate
+                            )
+                            return@NonNullObserver
+                        }
+                        else -> iapUtils.showPostUpgradeErrorDialog(
+                            context = this,
+                            errorCode = errorMsg.throwable.httpErrorCode,
+                            errorMessage = errorMsg.throwable.errorMessage,
+                            errorType = errorMsg.errorCode,
+                            retryListener = { _, _ -> iapViewModel.executeOrder() },
+                            cancelListener = { _, _ -> resetPurchase() }
+                        )
+                    }
+                } else {
+                    iapUtils.showPostUpgradeErrorDialog(
+                        context = this,
+                        errorType = errorMsg.errorCode,
+                        retryListener = { _, _ ->
+                            if (errorMsg.errorCode == ErrorMessage.EXECUTE_ORDER_CODE)
+                                iapViewModel.executeOrder()
+                            else
+                                iapViewModel.refreshCourseData(true)
+                        },
+                        cancelListener = { _, _ -> resetPurchase() }
+
+                    )
+                }
+                iapViewModel.errorMessageShown()
+            }
+        )
     }
 
     private val dataCallback: DataCallback<Int> = object : DataCallback<Int>() {
@@ -236,6 +324,54 @@ class MyCoursesListFragment : OfflineSupportBaseFragment(), RefreshListener {
         getUserEnrolledCourses(fromCache)
     }
 
+    private fun detectUnfulfilledPurchase(verifiedCourses: List<String>?) {
+        if (verifiedCourses?.isEmpty() == null) return
+
+        billingProcessor = BillingProcessor(requireContext(), object : BillingFlowListeners {
+            override fun onBillingSetupFinished(billingResult: BillingResult) {
+                super.onBillingSetupFinished(billingResult)
+
+                billingProcessor.queryPurchase { _, purchases ->
+
+                    if (purchases.isEmpty()) return@queryPurchase
+
+                    val purchasesList = purchases.filter {
+                        it.accountIdentifiers?.obfuscatedAccountId?.decodeToLong() ==
+                                loginPrefs.userId
+                    }.associate { it.skus[0] to it.purchaseToken }.toList()
+
+                    handleUnfulfilledPurchases(getVerifiedProducts(verifiedCourses), purchasesList)
+                }
+            }
+        })
+    }
+
+    private fun handleUnfulfilledPurchases(
+        verifiedProducts: List<String>,
+        purchasedProducts: List<Pair<String, String>>
+    ) {
+        unfulfilledPurchases = purchasedProducts.filter {
+            it.first !in verifiedProducts
+        }.toMutableList()
+
+        if (unfulfilledPurchases.isNotEmpty()) {
+            lifecycleScope.launch {
+                purchaseCourse()
+            }
+        }
+    }
+
+    private fun purchaseCourse() {
+        iapViewModel.upgradeMode = InAppPurchasesViewModel.UpgradeMode.SILENT
+        iapViewModel.setPurchaseToken(unfulfilledPurchases[0].second)
+        iapViewModel.addProductToBasket(unfulfilledPurchases[0].first)
+        unfulfilledPurchases = unfulfilledPurchases.drop(1)
+    }
+
+    private fun getVerifiedProducts(verifiedCourses: List<String>): List<String> {
+        return ProductManager.getProductOrSKUs(verifiedCourses)
+    }
+
     private fun getUserEnrolledCourses(fromCache: Boolean = false) {
         enrolledCoursesCall.enqueue(object : Callback<List<EnrolledCoursesResponse>> {
             override fun onResponse(
@@ -253,6 +389,14 @@ class MyCoursesListFragment : OfflineSupportBaseFragment(), RefreshListener {
                         )
                     } else {
                         resetPurchase()
+                        if (unfulfilledPurchases.isEmpty()) {
+                            detectUnfulfilledPurchase(
+                                response.body()
+                                    ?.filter {
+                                        !it.mode.equals(EnrollmentMode.AUDIT.toString(), true)
+                                    }?.map { it.courseId }?.toList()
+                            )
+                        }
                     }
                 } else if (fromCache) { // Fetch latest data from server if cache call's response is unSuccessful
                     loadData(showProgress = true, fromCache = false)
@@ -366,6 +510,8 @@ class MyCoursesListFragment : OfflineSupportBaseFragment(), RefreshListener {
                 refreshOnPurchase = false
                 iapViewModel.resetPurchase(true)
             }
+        } else if (iapViewModel.upgradeMode.isSilentMode()) {
+            iapViewModel.resetPurchase(false)
         }
     }
 
