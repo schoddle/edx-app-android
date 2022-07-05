@@ -82,7 +82,6 @@ class InAppPurchasesViewModel @Inject constructor(
                     result.data?.let {
                         if (upgradeMode.isSilentMode()) executeOrder()
                         else _checkoutResponse.value = it
-
                     } ?: endLoading()
                 }
 

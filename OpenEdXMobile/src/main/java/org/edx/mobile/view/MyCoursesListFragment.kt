@@ -44,7 +44,6 @@ import org.edx.mobile.model.course.EnrollmentMode
 import org.edx.mobile.module.analytics.Analytics
 import org.edx.mobile.module.analytics.InAppPurchasesAnalytics
 import org.edx.mobile.module.db.DataCallback
-import org.edx.mobile.module.prefs.LoginPrefs
 import org.edx.mobile.util.ConfigUtil
 import org.edx.mobile.util.ConfigUtil.Companion.isCourseDiscoveryEnabled
 import org.edx.mobile.util.InAppPurchasesException
@@ -88,9 +87,6 @@ class MyCoursesListFragment : OfflineSupportBaseFragment(), RefreshListener {
 
     @Inject
     lateinit var iapUtils: InAppPurchasesUtils
-
-    @Inject
-    lateinit var loginPrefs: LoginPrefs
 
     private lateinit var errorNotification: FullScreenErrorNotification
     private lateinit var enrolledCoursesCall: Call<List<EnrolledCoursesResponse>>
@@ -186,21 +182,7 @@ class MyCoursesListFragment : OfflineSupportBaseFragment(), RefreshListener {
             viewLifecycleOwner,
             NonNullObserver {
                 if (iapViewModel.upgradeMode.isSilentMode()) {
-                    AlertDialogFragment.newInstance(
-                        getString(R.string.silent_course_upgrade_success_title),
-                        getString(R.string.silent_course_upgrade_success_message),
-                        getString(R.string.label_refresh_now),
-                        { _, _ ->
-                            iapViewModel.showFullScreenLoader(true)
-                        },
-                        getString(R.string.label_continue_without_update),
-                        { _, _ ->
-                            resetPurchase()
-                            if (unfulfilledPurchases.isNotEmpty()) {
-                                purchaseCourse()
-                            }
-                        }
-                    ).show(childFragmentManager, null)
+                    showNewExperienceAlertDialog()
                 }
             })
 
@@ -228,13 +210,14 @@ class MyCoursesListFragment : OfflineSupportBaseFragment(), RefreshListener {
             viewLifecycleOwner,
             NonNullObserver { isPurchaseCompleted ->
                 if (isPurchaseCompleted) {
-                    fullscreenLoader?.dismiss()
+                    if (fullscreenLoader?.isAdded == true) fullscreenLoader?.dismiss()
                     iapAnalytics.trackIAPEvent(Analytics.Events.IAP_COURSE_UPGRADE_SUCCESS)
                     iapAnalytics.trackIAPEvent(Analytics.Events.IAP_UNLOCK_UPGRADED_CONTENT_TIME)
                     iapAnalytics.trackIAPEvent(Analytics.Events.IAP_UNLOCK_UPGRADED_CONTENT_REFRESH_TIME)
                     SnackbarErrorNotification(binding.root).showError(R.string.purchase_success_message)
                     iapViewModel.resetPurchase(false)
 
+                    // To start the upgrade process for other unfulfilled purchases if any
                     if (unfulfilledPurchases.isNotEmpty()) {
                         purchaseCourse()
                     }
@@ -282,6 +265,24 @@ class MyCoursesListFragment : OfflineSupportBaseFragment(), RefreshListener {
                 iapViewModel.errorMessageShown()
             }
         )
+    }
+
+    private fun showNewExperienceAlertDialog() {
+        AlertDialogFragment.newInstance(
+            getString(R.string.silent_course_upgrade_success_title),
+            getString(R.string.silent_course_upgrade_success_message),
+            getString(R.string.label_refresh_now),
+            { _, _ ->
+                iapViewModel.showFullScreenLoader(true)
+            },
+            getString(R.string.label_continue_without_update),
+            { _, _ ->
+                resetPurchase()
+                if (unfulfilledPurchases.isNotEmpty()) {
+                    purchaseCourse()
+                }
+            }, false
+        ).show(childFragmentManager, null)
     }
 
     private val dataCallback: DataCallback<Int> = object : DataCallback<Int>() {
@@ -333,11 +334,11 @@ class MyCoursesListFragment : OfflineSupportBaseFragment(), RefreshListener {
 
                 billingProcessor.queryPurchase { _, purchases ->
 
-                    if (purchases.isEmpty()) return@queryPurchase
+                    if (purchases.isEmpty() || environment.loginPrefs.userId == null) return@queryPurchase
 
                     val purchasesList = purchases.filter {
                         it.accountIdentifiers?.obfuscatedAccountId?.decodeToLong() ==
-                                loginPrefs.userId
+                                environment.loginPrefs.userId
                     }.associate { it.skus[0] to it.purchaseToken }.toList()
 
                     handleUnfulfilledPurchases(getVerifiedProducts(verifiedCourses), purchasesList)
@@ -346,6 +347,12 @@ class MyCoursesListFragment : OfflineSupportBaseFragment(), RefreshListener {
         })
     }
 
+    /**
+     * To detect and handle courses which are purchased but still not Verified
+     *
+     * @param verifiedProducts: A list of enrolled courses with mode set to Verified
+     * @param purchasedProducts: A list of pairs of SKU and PurchaseToken of purchased courses
+     */
     private fun handleUnfulfilledPurchases(
         verifiedProducts: List<String>,
         purchasedProducts: List<Pair<String, String>>
@@ -368,6 +375,7 @@ class MyCoursesListFragment : OfflineSupportBaseFragment(), RefreshListener {
         unfulfilledPurchases = unfulfilledPurchases.drop(1)
     }
 
+    // Todo Replace when course product mapping is complete
     private fun getVerifiedProducts(verifiedCourses: List<String>): List<String> {
         return ProductManager.getProductOrSKUs(verifiedCourses)
     }

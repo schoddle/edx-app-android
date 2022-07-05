@@ -169,7 +169,7 @@ public class LoginPrefs {
     @Nullable
     public Long getUserId() {
         final ProfileModel profileModel = getCurrentUserProfile();
-        return null == profileModel ? null : profileModel.id;
+        return profileModel != null ? profileModel.id : null;
     }
 
     @Nullable

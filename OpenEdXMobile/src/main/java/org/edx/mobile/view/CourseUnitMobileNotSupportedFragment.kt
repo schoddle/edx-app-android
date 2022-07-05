@@ -22,9 +22,9 @@ import org.edx.mobile.inapppurchases.BillingProcessor.BillingFlowListeners
 import org.edx.mobile.inapppurchases.ProductManager
 import org.edx.mobile.model.api.AuthorizationDenialReason
 import org.edx.mobile.model.course.CourseComponent
-import org.edx.mobile.module.analytics.Analytics.*
+import org.edx.mobile.module.analytics.Analytics.Events
+import org.edx.mobile.module.analytics.Analytics.Screens
 import org.edx.mobile.module.analytics.InAppPurchasesAnalytics
-import org.edx.mobile.module.prefs.LoginPrefs
 import org.edx.mobile.util.*
 import org.edx.mobile.viewModel.InAppPurchasesViewModel
 import javax.inject.Inject
@@ -44,9 +44,6 @@ class CourseUnitMobileNotSupportedFragment : CourseUnitFragment() {
 
     @Inject
     lateinit var iapUtils: InAppPurchasesUtils
-
-    @Inject
-    lateinit var loginPrefs: LoginPrefs
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -249,12 +246,27 @@ class CourseUnitMobileNotSupportedFragment : CourseUnitFragment() {
                         )
                         return@NonNullObserver
                     }
+                    HttpStatus.NOT_ACCEPTABLE -> {
+                        iapUtils.showPostUpgradeErrorDialog(
+                            context = this,
+                            errorResId = errorMsg.errorResId,
+                            errorCode = errorMsg.throwable.httpErrorCode,
+                            errorMessage = errorMsg.throwable.errorMessage,
+                            errorType = errorMsg.errorCode,
+                            retryListener = { _, _ ->
+                                iapViewModel.upgradeMode =
+                                    InAppPurchasesViewModel.UpgradeMode.SILENT
+                                iapViewModel.showFullScreenLoader(true)
+                            },
+                            cancelListener = null
+                        )
+                    }
                     else -> iapUtils.showUpgradeErrorDialog(
-                        this,
-                        errorMsg.errorResId,
-                        errorMsg.throwable.httpErrorCode,
-                        errorMsg.throwable.errorMessage,
-                        errorMsg.errorCode
+                        context = this,
+                        errorResId = errorMsg.errorResId,
+                        errorCode = errorMsg.throwable.httpErrorCode,
+                        errorMessage = errorMsg.throwable.errorMessage,
+                        errorType = errorMsg.errorCode
                     )
                 }
             } else {

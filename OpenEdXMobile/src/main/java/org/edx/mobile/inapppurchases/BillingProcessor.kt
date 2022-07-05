@@ -97,6 +97,7 @@ class BillingProcessor(val context: Context, val listener: BillingFlowListeners?
      *
      * @param activity active activity to launch our billing flow from
      * @param productId SKU (Product ID) to be purchased
+     * @param userId    User Id of the purchaser
      */
     fun purchaseItem(activity: Activity, productId: String, userId: Long) {
         if (billingClient.isReady) {
@@ -119,6 +120,7 @@ class BillingProcessor(val context: Context, val listener: BillingFlowListeners?
      *
      * @param activity active activity to launch our billing flow from
      * @param skuDetail SKU (Product) to be purchased
+     * @param userId    User Id of the purchaser
      */
     private fun launchBillingFlow(activity: Activity, skuDetail: SkuDetails, userId: Long) {
         val billingFlowParamsBuilder = BillingFlowParams.newBuilder()

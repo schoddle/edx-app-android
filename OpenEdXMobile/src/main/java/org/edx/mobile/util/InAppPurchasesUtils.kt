@@ -7,6 +7,7 @@ import androidx.fragment.app.Fragment
 import org.edx.mobile.R
 import org.edx.mobile.core.IEdxEnvironment
 import org.edx.mobile.exception.ErrorMessage
+import org.edx.mobile.http.HttpStatus
 import org.edx.mobile.module.analytics.Analytics
 import org.edx.mobile.module.analytics.InAppPurchasesAnalytics
 import org.edx.mobile.view.dialog.AlertDialogFragment
@@ -71,8 +72,8 @@ class InAppPurchasesUtils @Inject constructor(
                 }
             },
             context.getString(if (listener != null) R.string.label_cancel else R.string.label_get_help),
-            { dialog, which ->
-                listener?.onClick(dialog, which).also {
+            { _, _ ->
+                listener?.let {
                     iapAnalytics.trackIAPEvent(
                         eventName = Analytics.Events.IAP_ERROR_ALERT_ACTION,
                         errorMsg = feedbackErrorMessage,
@@ -97,6 +98,7 @@ class InAppPurchasesUtils @Inject constructor(
 
     fun showPostUpgradeErrorDialog(
         context: Fragment,
+        @StringRes errorResId: Int = R.string.error_course_not_fullfilled,
         errorCode: Int? = null,
         errorMessage: String? = null,
         errorType: Int? = null,
@@ -116,16 +118,23 @@ class InAppPurchasesUtils @Inject constructor(
         )
         AlertDialogFragment.newInstance(
             context.getString(R.string.title_upgrade_error),
-            context.getString(R.string.error_course_not_fullfilled),
-            context.getString(R.string.label_refresh_to_retry),
+            context.getString(errorResId),
+            context.getString(
+                if (errorCode == HttpStatus.NOT_ACCEPTABLE) R.string.label_refresh_now
+                else R.string.label_refresh_to_retry
+            ),
             { dialog, which ->
                 retryListener?.onClick(dialog, which).also {
-                    iapAnalytics.initRefreshContentTime()
-                    iapAnalytics.trackIAPEvent(
-                        eventName = Analytics.Events.IAP_ERROR_ALERT_ACTION,
-                        errorMsg = feedbackErrorMessage,
-                        actionTaken = Analytics.Values.ACTION_REFRESH
-                    )
+                    if (errorCode == HttpStatus.NOT_ACCEPTABLE) {
+                        // Add Analytics for refresh course on unfulfilled payments
+                    } else {
+                        iapAnalytics.initRefreshContentTime()
+                        iapAnalytics.trackIAPEvent(
+                            eventName = Analytics.Events.IAP_ERROR_ALERT_ACTION,
+                            errorMsg = feedbackErrorMessage,
+                            actionTaken = Analytics.Values.ACTION_REFRESH
+                        )
+                    }
                 }
             },
             context.getString(R.string.label_get_help),

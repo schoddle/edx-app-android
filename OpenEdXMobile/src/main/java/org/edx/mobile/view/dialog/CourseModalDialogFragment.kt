@@ -21,7 +21,11 @@ import org.edx.mobile.inapppurchases.BillingProcessor
 import org.edx.mobile.inapppurchases.ProductManager
 import org.edx.mobile.module.analytics.Analytics.Events
 import org.edx.mobile.module.analytics.InAppPurchasesAnalytics
-import org.edx.mobile.util.*
+import org.edx.mobile.util.AppConstants
+import org.edx.mobile.util.InAppPurchasesException
+import org.edx.mobile.util.InAppPurchasesUtils
+import org.edx.mobile.util.NonNullObserver
+import org.edx.mobile.util.ResourceUtil
 import org.edx.mobile.viewModel.InAppPurchasesViewModel
 import javax.inject.Inject
 
@@ -206,18 +210,34 @@ class CourseModalDialogFragment : DialogFragment() {
                         )
                         return@NonNullObserver
                     }
+                    HttpStatus.NOT_ACCEPTABLE -> {
+                        iapUtils.showPostUpgradeErrorDialog(
+                            context = this@CourseModalDialogFragment,
+                            errorResId = errorMsg.errorResId,
+                            errorCode = errorMsg.throwable.httpErrorCode,
+                            errorMessage = errorMsg.throwable.errorMessage,
+                            errorType = errorMsg.errorCode,
+                            retryListener = { _, _ ->
+                                iapViewModel.upgradeMode =
+                                    InAppPurchasesViewModel.UpgradeMode.SILENT
+                                iapViewModel.showFullScreenLoader(true)
+                                dismiss()
+                            },
+                            cancelListener = null
+                        )
+                    }
                     else -> iapUtils.showUpgradeErrorDialog(
                         context = this@CourseModalDialogFragment,
-                        errorMsg.errorResId,
-                        errorMsg.throwable.httpErrorCode,
-                        errorMsg.throwable.errorMessage,
-                        errorMsg.errorCode
+                        errorResId = errorMsg.errorResId,
+                        errorCode = errorMsg.throwable.httpErrorCode,
+                        errorMessage = errorMsg.throwable.errorMessage,
+                        errorType = errorMsg.errorCode
                     )
                 }
             } else {
                 iapUtils.showUpgradeErrorDialog(
                     context = this@CourseModalDialogFragment,
-                    errorMsg.errorResId,
+                    errorResId = errorMsg.errorResId,
                     errorType = errorMsg.errorCode
                 )
             }
