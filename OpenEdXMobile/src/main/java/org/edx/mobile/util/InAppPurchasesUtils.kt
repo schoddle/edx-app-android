@@ -21,6 +21,24 @@ class InAppPurchasesUtils @Inject constructor(
     var iapAnalytics: InAppPurchasesAnalytics,
 ) {
 
+    /**
+     * Shows Alert Dialog for all error cases that can occur before a successful course purchase i.e
+     * SKU/Product ID not available (Enrollment-API), while fetching the price from Play Console
+     * (Payment SDK), Adding course in purchase basket/cart (Basket-API), during basket checkout
+     * (Checkout-API) or while purchasing a course (Payment SDK).
+     *
+     * All Alerts (except Price Fetching): Two buttons; Cancel and Get help, without any listener
+     * Fetching Price Alert: Two buttons; Try again & Cancel, with a listener for Try again
+     *
+     * Events are also tracked on interaction with the alert.
+     *
+     * @param context Fragment context for resolving message strings and displaying the dialog
+     * @param errorResId Reference to the localized string resource for message
+     * @param errorCode Http Status Code for feedback message
+     * @param errorMessage API error response for feedback message
+     * @param errorType IAP [ErrorMessage] type/code for feedback message
+     * @param listener Retry listener to fetch the course price again
+     */
     fun showUpgradeErrorDialog(
         context: Fragment,
         @StringRes errorResId: Int = R.string.general_error_message,
@@ -78,6 +96,27 @@ class InAppPurchasesUtils @Inject constructor(
         ).show(context.childFragmentManager, null)
     }
 
+    /**
+     * Shows Alert Dialog for all error cases that can occur after a successful course purchase i.e
+     * Course already purchased (Basket-API) or unable to verify the purchase on backend
+     * (Execute-API).
+     *
+     * Course Already Purchased : Three buttons; Refresh Now, Get help and Cancel, with two
+     * listeners. One for refresh and the other one for Get help and Cancel
+     * Unable to Verify: Three buttons; Refresh to retry, Get help and Cancel, with two listeners.
+     * One for Refresh to retry and the other one for Get Help and Cancel
+     *
+     * Events are also tracked on interaction with the alert.
+     *
+     * @param context Fragment context for resolving message strings and displaying the dialog
+     * @param errorResId Reference to the localized string resource for message
+     * @param errorCode Http Status Code for feedback message
+     * @param errorMessage API error response for feedback message
+     * @param errorType IAP [ErrorMessage] type/code for feedback message
+     * @param retryListener Retry listener to fetch the upgraded course again or to verify the
+     * purchase
+     * @param cancelListener Cancel listener to reset the purchase flow
+     */
     fun showPostUpgradeErrorDialog(
         context: Fragment,
         @StringRes errorResId: Int = R.string.error_course_not_fullfilled,
