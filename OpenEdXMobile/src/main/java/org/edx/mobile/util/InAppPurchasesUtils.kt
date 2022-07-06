@@ -8,7 +8,8 @@ import org.edx.mobile.R
 import org.edx.mobile.core.IEdxEnvironment
 import org.edx.mobile.exception.ErrorMessage
 import org.edx.mobile.http.HttpStatus
-import org.edx.mobile.module.analytics.Analytics
+import org.edx.mobile.module.analytics.Analytics.Events
+import org.edx.mobile.module.analytics.Analytics.Values
 import org.edx.mobile.module.analytics.InAppPurchasesAnalytics
 import org.edx.mobile.view.dialog.AlertDialogFragment
 import javax.inject.Inject
@@ -39,15 +40,15 @@ class InAppPurchasesUtils @Inject constructor(
 
         when (errorType) {
             ErrorMessage.PAYMENT_SDK_CODE -> iapAnalytics.trackIAPEvent(
-                eventName = Analytics.Events.IAP_PAYMENT_ERROR,
+                eventName = Events.IAP_PAYMENT_ERROR,
                 errorMsg = feedbackErrorMessage
             )
             ErrorMessage.PRICE_CODE -> iapAnalytics.trackIAPEvent(
-                eventName = Analytics.Events.IAP_PRICE_LOAD_ERROR,
+                eventName = Events.IAP_PRICE_LOAD_ERROR,
                 errorMsg = feedbackErrorMessage
             )
             else -> iapAnalytics.trackIAPEvent(
-                eventName = Analytics.Events.IAP_COURSE_UPGRADE_ERROR,
+                eventName = Events.IAP_COURSE_UPGRADE_ERROR,
                 errorMsg = feedbackErrorMessage
             )
         }
@@ -59,38 +60,19 @@ class InAppPurchasesUtils @Inject constructor(
             { dialog, which ->
                 listener?.onClick(dialog, which).also {
                     iapAnalytics.trackIAPEvent(
-                        eventName = Analytics.Events.IAP_ERROR_ALERT_ACTION,
+                        eventName = Events.IAP_ERROR_ALERT_ACTION,
                         errorMsg = feedbackErrorMessage,
-                        actionTaken = Analytics.Values.ACTION_RELOAD_PRICE
+                        actionTaken = Values.ACTION_RELOAD_PRICE
                     )
-                } ?: run {
-                    iapAnalytics.trackIAPEvent(
-                        eventName = Analytics.Events.IAP_ERROR_ALERT_ACTION,
-                        errorMsg = feedbackErrorMessage,
-                        actionTaken = Analytics.Values.ACTION_CLOSE
-                    )
-                }
+                } ?: run { trackAlertCloseEvent(feedbackErrorMessage) }
             },
             context.getString(if (listener != null) R.string.label_cancel else R.string.label_get_help),
             { _, _ ->
-                listener?.let {
-                    iapAnalytics.trackIAPEvent(
-                        eventName = Analytics.Events.IAP_ERROR_ALERT_ACTION,
-                        errorMsg = feedbackErrorMessage,
-                        actionTaken = Analytics.Values.ACTION_CLOSE
-                    )
+                if (listener != null) {
+                    trackAlertCloseEvent(feedbackErrorMessage)
                     if (context is DialogFragment) context.dismiss()
-                } ?: run {
-                    environment.router?.showFeedbackScreen(
-                        context.requireActivity(),
-                        context.getString(R.string.email_subject_upgrade_error),
-                        feedbackErrorMessage
-                    )
-                    iapAnalytics.trackIAPEvent(
-                        eventName = Analytics.Events.IAP_ERROR_ALERT_ACTION,
-                        errorMsg = feedbackErrorMessage,
-                        actionTaken = Analytics.Values.ACTION_GET_HELP
-                    )
+                } else {
+                    showFeedbackScreen(context, feedbackErrorMessage)
                 }
             }, false
         ).show(context.childFragmentManager, null)
@@ -113,7 +95,7 @@ class InAppPurchasesUtils @Inject constructor(
         ).toString()
 
         iapAnalytics.trackIAPEvent(
-            eventName = Analytics.Events.IAP_COURSE_UPGRADE_ERROR,
+            eventName = Events.IAP_COURSE_UPGRADE_ERROR,
             errorMsg = feedbackErrorMessage
         )
         AlertDialogFragment.newInstance(
@@ -130,9 +112,9 @@ class InAppPurchasesUtils @Inject constructor(
                     } else {
                         iapAnalytics.initRefreshContentTime()
                         iapAnalytics.trackIAPEvent(
-                            eventName = Analytics.Events.IAP_ERROR_ALERT_ACTION,
+                            eventName = Events.IAP_ERROR_ALERT_ACTION,
                             errorMsg = feedbackErrorMessage,
-                            actionTaken = Analytics.Values.ACTION_REFRESH
+                            actionTaken = Values.ACTION_REFRESH
                         )
                     }
                 }
@@ -140,28 +122,36 @@ class InAppPurchasesUtils @Inject constructor(
             context.getString(R.string.label_get_help),
             { dialog, which ->
                 cancelListener?.onClick(dialog, which).also {
-                    environment.router?.showFeedbackScreen(
-                        context.requireActivity(),
-                        context.getString(R.string.email_subject_upgrade_error),
-                        feedbackErrorMessage
-                    )
-                    iapAnalytics.trackIAPEvent(
-                        eventName = Analytics.Events.IAP_ERROR_ALERT_ACTION,
-                        errorMsg = feedbackErrorMessage,
-                        actionTaken = Analytics.Values.ACTION_GET_HELP
-                    )
+                    showFeedbackScreen(context, feedbackErrorMessage)
                 }
             },
             context.getString(R.string.label_cancel),
             { dialog, which ->
                 cancelListener?.onClick(dialog, which).also {
-                    iapAnalytics.trackIAPEvent(
-                        eventName = Analytics.Events.IAP_ERROR_ALERT_ACTION,
-                        errorMsg = feedbackErrorMessage,
-                        actionTaken = Analytics.Values.ACTION_CLOSE
-                    )
+                    trackAlertCloseEvent(feedbackErrorMessage)
                 }
             }, false
         ).show(context.childFragmentManager, null)
+    }
+
+    private fun trackAlertCloseEvent(feedbackErrorMessage: String) {
+        iapAnalytics.trackIAPEvent(
+            eventName = Events.IAP_ERROR_ALERT_ACTION,
+            errorMsg = feedbackErrorMessage,
+            actionTaken = Values.ACTION_CLOSE
+        )
+    }
+
+    private fun showFeedbackScreen(context: Fragment, feedbackErrorMessage: String) {
+        environment.router?.showFeedbackScreen(
+            context.requireActivity(),
+            context.getString(R.string.email_subject_upgrade_error),
+            feedbackErrorMessage
+        )
+        iapAnalytics.trackIAPEvent(
+            eventName = Events.IAP_ERROR_ALERT_ACTION,
+            errorMsg = feedbackErrorMessage,
+            actionTaken = Values.ACTION_GET_HELP
+        )
     }
 }
