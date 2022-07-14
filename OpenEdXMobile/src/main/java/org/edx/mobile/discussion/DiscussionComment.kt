@@ -28,7 +28,11 @@ import java.util.*
 class DiscussionComment : Serializable, IAuthorData, ProfileImageProvider {
     @SerializedName("id")
     val identifier: String? = null
+
+    @SerializedName("parent_id")
     val parentId: String? = null
+
+    @SerializedName("thread_id")
     val threadId: String? = null
 
     @SerializedName("raw_body")
