@@ -31,6 +31,7 @@ import org.edx.mobile.exception.ErrorMessage;
 import org.edx.mobile.http.callback.ErrorHandlingCallback;
 import org.edx.mobile.http.notifications.SnackbarErrorNotification;
 import org.edx.mobile.logger.Logger;
+import org.edx.mobile.mediation.Adverts;
 import org.edx.mobile.model.course.BlockType;
 import org.edx.mobile.model.course.CourseComponent;
 import org.edx.mobile.model.course.CourseStatus;
@@ -113,12 +114,19 @@ public class CourseUnitNavigationActivity extends CourseBaseActivity implements
         if (!isVideoMode) {
             getCourseCelebrationStatus();
         }
+            
+        Adverts adverts;
+        adverts = new Adverts();
+        adverts.loadInterstitialAd();
+        adverts.loadRewardedVideoAd();
+            
     }
 
     private void initAdapter() {
         pagerAdapter = new CourseUnitPagerAdapter(this, environment.getConfig(),
                 unitList, courseData, courseUpgradeData, this);
         pager2.setAdapter(pagerAdapter);
+        pager2.setUserInputEnabled(false);
         pager2.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
@@ -216,6 +224,9 @@ public class CourseUnitNavigationActivity extends CourseBaseActivity implements
         int index = pager2.getCurrentItem();
         if (index > 0) {
             pager2.setCurrentItem(index - 1);
+            Adverts adverts;
+            adverts = new Adverts();
+            adverts.showInterstitialAd();
         }
     }
 
@@ -224,6 +235,9 @@ public class CourseUnitNavigationActivity extends CourseBaseActivity implements
         int index = pager2.getCurrentItem();
         if (index < pagerAdapter.getItemCount() - 1) {
             pager2.setCurrentItem(index + 1);
+            Adverts adverts;
+            adverts = new Adverts();
+            adverts.showRewardedVideoAd();
         }
         // CourseComponent#getAncestor(2) returns the section of a component
         CourseComponent currentBlockSection = selectedUnit.getAncestor(2);
