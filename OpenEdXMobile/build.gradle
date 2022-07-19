@@ -51,35 +51,35 @@ tasks.withType(Test) {
  */
 def getVersionName = { ->
     def description = APPLICATION_VERSION_TAG
-/**    try {
- *       def branch = System.getenv("BRANCH")
- *       if (null == branch || branch.isEmpty()) {
- *           def branchout = new ByteArrayOutputStream()
- *           exec {
- *               commandLine 'git', 'rev-parse', '--abbrev-ref', 'HEAD'
- *               standardOutput = branchout
- *           }
- *           branch = branchout.toString().trim()
- *       }
+    try {
+        def branch = System.getenv("BRANCH")
+        if (null == branch || branch.isEmpty()) {
+            def branchout = new ByteArrayOutputStream()
+            exec {
+                commandLine 'git', 'rev-parse', '--abbrev-ref', 'HEAD'
+                standardOutput = branchout
+            }
+            branch = branchout.toString().trim()
+        }
 
- *       def hasSemanticVersion = { s ->
- *           // This branch/tag contains a semantic version (e.g. "rc/2.6.0" or "release/2.5")
- *           return s.indexOf("rc/") >= 0 || s.indexOf("release/") >= 0
- *       }
- *       if (hasSemanticVersion(branch)) {
- *           description = branch
- *       } else {
- *           def stdout = new ByteArrayOutputStream()
- *           exec {
- *               commandLine 'git', 'describe'
- *               standardOutput = stdout
- *           }
- *           def describe = stdout.toString().trim()
- *           if (hasSemanticVersion(describe)) {
- *               description = describe
- *           }
- *       }
- */   }
+        def hasSemanticVersion = { s ->
+            // This branch/tag contains a semantic version (e.g. "rc/2.6.0" or "release/2.5")
+            //return s.indexOf("rc/") >= 0 || s.indexOf("release/") >= 0
+        }
+        if (hasSemanticVersion(branch)) {
+            description = branch
+        } else {
+            def stdout = new ByteArrayOutputStream()
+            exec {
+                commandLine 'git', 'describe'
+                standardOutput = stdout
+            }
+            def describe = stdout.toString().trim()
+            if (hasSemanticVersion(describe)) {
+                description = describe
+            }
+        }
+    }
     catch (e) {
         logger.error("Could not determine version name", e)
     }
