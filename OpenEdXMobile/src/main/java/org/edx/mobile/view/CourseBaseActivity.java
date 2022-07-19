@@ -6,11 +6,13 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
+import org.edx.mobile.R;
 import org.edx.mobile.base.BaseFragmentActivity;
 import org.edx.mobile.course.CourseAPI;
 import org.edx.mobile.databinding.ActivityCourseBaseBinding;
 import org.edx.mobile.http.notifications.FullScreenErrorNotification;
 import org.edx.mobile.interfaces.RefreshListener;
+import org.edx.mobile.mediation.Adverts;
 import org.edx.mobile.model.api.CourseUpgradeResponse;
 import org.edx.mobile.model.api.EnrolledCoursesResponse;
 import org.edx.mobile.model.course.BlockPath;
@@ -74,6 +76,11 @@ public abstract class CourseBaseActivity extends BaseFragmentActivity
                 bundle = getIntent().getBundleExtra(Router.EXTRA_BUNDLE);
         }
         restore(bundle);
+        
+        Adverts adverts;
+        adverts = new Adverts();
+        adverts.loadBannerAd();
+        adverts.loadNativeAd();
     }
 
     @Override
@@ -234,4 +241,112 @@ public abstract class CourseBaseActivity extends BaseFragmentActivity
     public ActivityCourseBaseBinding getBaseBinding() {
         return binding;
     }
+    
+        private boolean adsEnabled = true;
+    private boolean adsInProduction = false;
+
+    private boolean bannerAdLoaded = false;
+
+    private AdView adView;
+    private FrameLayout adContainerView;
+    private int bannerCount;
+    private String bannerId;
+    private String bannerTest = "ca-app-pub-2491545259231757/8619853360";
+    // TODO: change the unit id
+    private String bannerProd = "ca-app-pub-2491545259231757/8619853360";
+
+    public void initializeAds() {
+        adContainerView = findViewById(R.id.ad_view_container);
+        adContainerView.post(new Runnable() {
+            @Override
+            public void run() {
+                bannerAds();
+                bannerAdLoaded = true;
+            }
+        });
+    }
+
+    private void bannerAds() {
+        // while app is in fully production stage
+        if (adsEnabled == true && adsInProduction == true) {
+            if (bannerId == null) {
+                bannerId = bannerProd;
+                bannerCount = 1;
+            }
+        } else if (adsEnabled == true && adsInProduction == false) {
+            bannerId = bannerTest;
+        }
+        adView = new AdView(this);
+        adView.setAdUnitId(bannerId);
+        adContainerView.removeAllViews();
+        adContainerView.addView(adView);
+        AdSize adSize = getAdSize();
+        adView.setAdSize(adSize);
+        adView.setAdListener(new AdListener() {
+
+            @Override
+            public void onAdLoaded () {
+                adContainerView.removeAllViews();
+                adContainerView.addView(adView);
+                if (adsEnabled == true && adsInProduction == true) {
+                    bannerCount = 1;
+                } else if (adsEnabled == true && adsInProduction == false) {
+                    bannerId = bannerTest;
+                }
+            }
+
+            @Override
+            public void onAdFailedToLoad(LoadAdError adError) {
+                if (adsEnabled == true && adsInProduction == true) {
+                    bannerCount++;
+                    //TODO: set up the method
+                    //setBannerId();
+                    bannerAds();
+                } else if (adsEnabled == true && adsInProduction == false) {
+                    bannerId = bannerTest;
+                    bannerAds();
+                }
+            }
+
+            @Override
+            public void onAdOpened() {
+
+            }
+
+            @Override
+            public void onAdClicked() {
+
+            }
+
+            @Override
+            public void onAdClosed() {
+
+            }
+
+        });
+
+        AdRequest adRequest = new AdRequest.Builder().build();
+        adRequest.isTestDevice(this);
+        adView.loadAd(adRequest);
+    }
+
+    private AdSize getAdSize() {
+        // Determine the screen width (less decorations) to use for the ad width.
+        Display display = getWindowManager().getDefaultDisplay();
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        display.getMetrics(outMetrics);
+
+        float density = outMetrics.density;
+
+        float adWidthPixels = adContainerView.getWidth();
+
+        // If the ad hasn't been laid out, default to the full screen width.
+        if (adWidthPixels == 0) {
+            adWidthPixels = outMetrics.widthPixels;
+        }
+
+        int adWidth = (int) (adWidthPixels / density);
+        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, adWidth);
+    }
+
 }
