@@ -658,4 +658,19 @@
     <string name="celebration_share_message">I\'m on my way to completing {course_name} online with @{platform_name}online. What are you spending your time learning? #my{platform_name}journey</string>
     <!-- accessibility label for section completion-->
     <string name="course_outline_completion_description">Completed</string>
+    <!-- AdMob-->
+    <string name="ad_attribution">Ad</string>
+    <string translatable="false" name="test_adaptive_banner_ad_unit_id">ca-app-pub-3940256099942544/6300978111</string>
+    <string translatable="false" name="test_rewarded_video_ad_unit_id">ca-app-pub-3940256099942544/5224354917</string>
+    <string translatable="false" name="test_rewarded_interstitial_ad_unit_id">ca-app-pub-3940256099942544/5354046379</string>
+    <string translatable="false" name="test_interstitial_ad_unit_id">ca-app-pub-3940256099942544/1033173712</string>
+    <string translatable="false" name="test_native_advanced_ad_unit_id">ca-app-pub-3940256099942544/2247696110</string>
+    <string translatable="false" name="test_app_open_ad_unit_id">ca-app-pub-3940256099942544/3419835294</string>
+    // TODO miniapp - set up prod unit ids
+    <string translatable="false" name="adaptive_banner_ad_unit_id">ca-app-pub-3940256099942544/0000000001</string>
+    <string translatable="false" name="rewarded_video_ad_unit_id">ca-app-pub-3940256099942544/0000000004</string>
+    <string translatable="false" name="rewarded_interstitial_ad_unit_id">ca-app-pub-3940256099942544/0000000002</string>
+    <string translatable="false" name="interstitial_ad_unit_id">ca-app-pub-3940256099942544/0000000003</string>
+    <string translatable="false" name="native_ad_unit_id">ca-app-pub-3940256099942544/0000000005</string>
+    <string translatable="false" name="app_open_ad_unit_id">ca-app-pub-3940256099942544/0000000006</string>
 </resources>
