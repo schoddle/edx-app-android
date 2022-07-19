@@ -50,7 +50,7 @@ tasks.withType(Test) {
  * @return The semantic version string, or "0.0.1" if we failed to determine one.
  */
 def getVersionName = { ->
-    def description = APPLICATION_VERSION_TAG
+    def description = 0.0.1
     try {
         def branch = System.getenv("BRANCH")
         if (null == branch || branch.isEmpty()) {
