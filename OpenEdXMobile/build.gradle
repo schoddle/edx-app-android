@@ -78,8 +78,8 @@ def getVersionName = { ->
  *           if (hasSemanticVersion(describe)) {
  *               description = describe
  *           }
- */       }
-    }
+ *       }
+ */   }
     catch (e) {
         logger.error("Could not determine version name", e)
     }
