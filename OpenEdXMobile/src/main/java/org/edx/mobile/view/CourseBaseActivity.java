@@ -6,7 +6,6 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
-import org.edx.mobile.R;
 import org.edx.mobile.base.BaseFragmentActivity;
 import org.edx.mobile.course.CourseAPI;
 import org.edx.mobile.databinding.ActivityCourseBaseBinding;
