@@ -60,7 +60,7 @@ import java.util.Map;
  * A simple {@link android.app.Activity} that displays adds using the sample adapter and sample
  * custom event.
  */
-public class Adverts extends BaseAppActivity {
+public class adverts extends BaseAppActivity {
 
     // The banner ad view.
     private AdView bannerAdView;
