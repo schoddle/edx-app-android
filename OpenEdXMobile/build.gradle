@@ -50,7 +50,7 @@ tasks.withType(Test) {
  * @return The semantic version string, or "0.0.1" if we failed to determine one.
  */
 def getVersionName = { ->
-    def description = 0.0.1
+    def description = "0.0.1"
     try {
         def branch = System.getenv("BRANCH")
         if (null == branch || branch.isEmpty()) {
@@ -64,7 +64,7 @@ def getVersionName = { ->
 
         def hasSemanticVersion = { s ->
             // This branch/tag contains a semantic version (e.g. "rc/2.6.0" or "release/2.5")
-            //return s.indexOf("rc/") >= 0 || s.indexOf("release/") >= 0
+            return s.indexOf("rc/") >= 0 || s.indexOf("release/") >= 0
         }
         if (hasSemanticVersion(branch)) {
             description = branch
