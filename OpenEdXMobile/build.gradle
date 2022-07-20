@@ -180,15 +180,15 @@ dependencies {
 //        }
 //    }
     implementation 'com.google.android.gms:play-services-ads:21.1.0'    
-    implementation  'com.google.ads.mediation:adcolony:4.8.0.0'
-    implementation  'com.google.ads.mediation:applovin:11.4.4.0'
-    implementation  'com.google.ads.mediation:inmobi:10.0.7.0'
-//    implementation  'com.google.ads.mediation:ironsource:7.2.3.1.0'
-    implementation  'com.google.ads.mediation:facebook:6.11.0.1'
-//    implementation  'com.google.ads.mediation:mytarget:5.15.3.0'
-//    implementation  'com.google.ads.mediation:pangle:4.5.0.6.0'
-//    implementation  'com.google.ads.mediation:verizonmedia:1.14.0.1'
-    implementation  'com.google.ads.mediation:vungle:6.11.0.2'
+//    implementation  'com.google.ads.mediation:adcolony:4.8.0.0'
+//    implementation  'com.google.ads.mediation:applovin:11.4.4.0'
+//    implementation  'com.google.ads.mediation:inmobi:10.0.7.0'
+////    implementation  'com.google.ads.mediation:ironsource:7.2.3.1.0'
+//    implementation  'com.google.ads.mediation:facebook:6.11.0.1'
+////    implementation  'com.google.ads.mediation:mytarget:5.15.3.0'
+////    implementation  'com.google.ads.mediation:pangle:4.5.0.6.0'
+////    implementation  'com.google.ads.mediation:verizonmedia:1.14.0.1'
+//    implementation  'com.google.ads.mediation:vungle:6.11.0.2'
     
     // Exo Player
     implementation 'com.google.android.exoplayer:exoplayer:2.16.0'
