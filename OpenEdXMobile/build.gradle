@@ -149,11 +149,11 @@ dependencies {
             strictly '9999.0-empty-to-avoid-conflict-with-guava'
         }
     }
-//    implementation("androidx.work:work-runtime") {
-//        version {
-//            strictly '2.6.0'
-//        }
-//    }
+    implementation("androidx.work:work-runtime") {
+        version {
+            strictly '2.6.0'
+        }
+    }
 //    implementation("androidx.core:core") {
 //        version {
 //            strictly '1.6.0'
