@@ -154,31 +154,31 @@ dependencies {
             strictly '2.6.0'
         }
     }
-//    implementation("androidx.core:core") {
-//        version {
-//            strictly '1.6.0'
-//        }
-//    }
-//    implementation("com.google.android.gms:play-services-measurement") {
-//        version {
-//            strictly '18.0.3'
-//        }
-//    }
-//    implementation("com.google.android.gms:play-services-measurement-api") {
-//        version {
-//            strictly '18.0.3'
-//        }
-//    }
-//    implementation("com.google.android.gms:play-services-measurement-impl") {
-//        version {
-//            strictly '18.0.3'
-//        }
-//    }
-//    implementation("com.google.android.gms:play-services-measurement-sdk") {
-//        version {
-//            strictly '18.0.3'
-//        }
-//    }
+    implementation("androidx.core:core") {
+        version {
+            strictly '1.6.0'
+        }
+    }
+    implementation("com.google.android.gms:play-services-measurement") {
+        version {
+            strictly '18.0.3'
+        }
+    }
+    implementation("com.google.android.gms:play-services-measurement-api") {
+        version {
+            strictly '18.0.3'
+        }
+    }
+    implementation("com.google.android.gms:play-services-measurement-impl") {
+        version {
+            strictly '18.0.3'
+        }
+    }
+    implementation("com.google.android.gms:play-services-measurement-sdk") {
+        version {
+            strictly '18.0.3'
+        }
+    }
     implementation 'com.google.android.gms:play-services-ads:20.6.0'    
 //    implementation  'com.google.ads.mediation:adcolony:4.8.0.0'
 //    implementation  'com.google.ads.mediation:applovin:11.4.4.0'
