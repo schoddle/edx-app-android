@@ -6,13 +6,13 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
-import org.edx.mobile.R;
+//import org.edx.mobile.R;
 import org.edx.mobile.base.BaseFragmentActivity;
 import org.edx.mobile.course.CourseAPI;
 import org.edx.mobile.databinding.ActivityCourseBaseBinding;
 import org.edx.mobile.http.notifications.FullScreenErrorNotification;
 import org.edx.mobile.interfaces.RefreshListener;
-import org.edx.mobile.mediation.adverts;
+//import org.edx.mobile.mediation.adverts;
 import org.edx.mobile.model.api.CourseUpgradeResponse;
 import org.edx.mobile.model.api.EnrolledCoursesResponse;
 import org.edx.mobile.model.course.BlockPath;
@@ -77,10 +77,10 @@ public abstract class CourseBaseActivity extends BaseFragmentActivity
         }
         restore(bundle);
         
-        Adverts adverts;
-        adverts = new Adverts();
-        adverts.loadBannerAd();
-        adverts.loadNativeAd();
+//        Adverts adverts;
+//        adverts = new Adverts();
+//        adverts.loadBannerAd();
+//        adverts.loadNativeAd();
     }
 
     @Override
@@ -247,7 +247,7 @@ public abstract class CourseBaseActivity extends BaseFragmentActivity
 
     private boolean bannerAdLoaded = false;
 
-    private AdView adView;
+/**    private AdView adView;
     private FrameLayout adContainerView;
     private int bannerCount;
     private String bannerId;
@@ -348,5 +348,5 @@ public abstract class CourseBaseActivity extends BaseFragmentActivity
         int adWidth = (int) (adWidthPixels / density);
         return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, adWidth);
     }
-
+**/
 }
